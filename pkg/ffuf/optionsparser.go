@@ -342,7 +342,12 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 			if len(cs) == 2 {
 				conf.AutoCalibrationStrings[cs[1]] = append(conf.AutoCalibrationStrings[cs[1]], &CalibrationString{Keyword: cs[1], Value: cs[0]})
 			} else {
-				conf.AutoCalibrationStrings[cs[1]] = append(conf.AutoCalibrationStrings[cs[1]], &CalibrationString{Keyword: "FUZZ", Value: cs[0]})
+				for _, k := range conf.WordlistKeywords {
+					// Only apply generic to WordlistKeywords that have no custom calibration strings
+					if _, ok := conf.AutoCalibrationStrings["FUZZ"]; !ok {
+						conf.AutoCalibrationStrings["FUZZ"] = append(conf.AutoCalibrationStrings["FUZZ"], &CalibrationString{Keyword: k, Value: cs[0]})
+					}
+				}
 			}
 		}
 	}
