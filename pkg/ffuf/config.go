@@ -5,49 +5,50 @@ import (
 )
 
 type Config struct {
-	AutoCalibration        bool                      `json:"autocalibration"`
-	AutoCalibrationStrings []string                  `json:"autocalibration_strings"`
-	Cancel                 context.CancelFunc        `json:"-"`
-	Colors                 bool                      `json:"colors"`
-	CommandKeywords        []string                  `json:"-"`
-	CommandLine            string                    `json:"cmdline"`
-	ConfigFile             string                    `json:"configfile"`
-	Context                context.Context           `json:"-"`
-	Data                   string                    `json:"postdata"`
-	Delay                  optRange                  `json:"delay"`
-	DirSearchCompat        bool                      `json:"dirsearch_compatibility"`
-	Extensions             []string                  `json:"extensions"`
-	Filters                map[string]FilterProvider `json:"filters"`
-	FollowRedirects        bool                      `json:"follow_redirects"`
-	Headers                map[string]string         `json:"headers"`
-	IgnoreBody             bool                      `json:"ignorebody"`
-	IgnoreWordlistComments bool                      `json:"ignore_wordlist_comments"`
-	InputMode              string                    `json:"inputmode"`
-	InputNum               int                       `json:"cmd_inputnum"`
-	InputProviders         []InputProviderConfig     `json:"inputproviders"`
-	InputShell             string                    `json:"inputshell"`
-	Matchers               map[string]FilterProvider `json:"matchers"`
-	MaxTime                int                       `json:"maxtime"`
-	MaxTimeJob             int                       `json:"maxtime_job"`
-	Method                 string                    `json:"method"`
-	OutputDirectory        string                    `json:"outputdirectory"`
-	OutputFile             string                    `json:"outputfile"`
-	OutputFormat           string                    `json:"outputformat"`
-	OutputCreateEmptyFile  bool	                     `json:"OutputCreateEmptyFile"`
-	ProgressFrequency      int                       `json:"-"`
-	ProxyURL               string                    `json:"proxyurl"`
-	Quiet                  bool                      `json:"quiet"`
-	Rate                   int64                     `json:"rate"`
-	Recursion              bool                      `json:"recursion"`
-	RecursionDepth         int                       `json:"recursion_depth"`
-	ReplayProxyURL         string                    `json:"replayproxyurl"`
-	StopOn403              bool                      `json:"stop_403"`
-	StopOnAll              bool                      `json:"stop_all"`
-	StopOnErrors           bool                      `json:"stop_errors"`
-	Threads                int                       `json:"threads"`
-	Timeout                int                       `json:"timeout"`
-	Url                    string                    `json:"url"`
-	Verbose                bool                      `json:"verbose"`
+	AutoCalibration        bool                            `json:"autocalibration"`
+	AutoCalibrationStrings map[string][]*CalibrationString `json:"autocalibration_strings"`
+	Cancel                 context.CancelFunc              `json:"-"`
+	Colors                 bool                            `json:"colors"`
+	CommandKeywords        []string                        `json:"-"`
+	WordlistKeywords       []string                        `json:"-"`
+	CommandLine            string                          `json:"cmdline"`
+	ConfigFile             string                          `json:"configfile"`
+	Context                context.Context                 `json:"-"`
+	Data                   string                          `json:"postdata"`
+	Delay                  optRange                        `json:"delay"`
+	DirSearchCompat        bool                            `json:"dirsearch_compatibility"`
+	Extensions             []string                        `json:"extensions"`
+	Filters                map[string]FilterProvider       `json:"filters"`
+	FollowRedirects        bool                            `json:"follow_redirects"`
+	Headers                map[string]string               `json:"headers"`
+	IgnoreBody             bool                            `json:"ignorebody"`
+	IgnoreWordlistComments bool                            `json:"ignore_wordlist_comments"`
+	InputMode              string                          `json:"inputmode"`
+	InputNum               int                             `json:"cmd_inputnum"`
+	InputProviders         []InputProviderConfig           `json:"inputproviders"`
+	InputShell             string                          `json:"inputshell"`
+	Matchers               map[string]FilterProvider       `json:"matchers"`
+	MaxTime                int                             `json:"maxtime"`
+	MaxTimeJob             int                             `json:"maxtime_job"`
+	Method                 string                          `json:"method"`
+	OutputDirectory        string                          `json:"outputdirectory"`
+	OutputFile             string                          `json:"outputfile"`
+	OutputFormat           string                          `json:"outputformat"`
+	OutputCreateEmptyFile  bool                            `json:"OutputCreateEmptyFile"`
+	ProgressFrequency      int                             `json:"-"`
+	ProxyURL               string                          `json:"proxyurl"`
+	Quiet                  bool                            `json:"quiet"`
+	Rate                   int64                           `json:"rate"`
+	Recursion              bool                            `json:"recursion"`
+	RecursionDepth         int                             `json:"recursion_depth"`
+	ReplayProxyURL         string                          `json:"replayproxyurl"`
+	StopOn403              bool                            `json:"stop_403"`
+	StopOnAll              bool                            `json:"stop_all"`
+	StopOnErrors           bool                            `json:"stop_errors"`
+	Threads                int                             `json:"threads"`
+	Timeout                int                             `json:"timeout"`
+	Url                    string                          `json:"url"`
+	Verbose                bool                            `json:"verbose"`
 }
 
 type InputProviderConfig struct {
@@ -56,9 +57,14 @@ type InputProviderConfig struct {
 	Value   string `json:"value"`
 }
 
+type CalibrationString struct {
+	Keyword string
+	Value   string
+}
+
 func NewConfig(ctx context.Context, cancel context.CancelFunc) Config {
 	var conf Config
-	conf.AutoCalibrationStrings = make([]string, 0)
+	conf.AutoCalibrationStrings = make(map[string][]*CalibrationString, 0)
 	conf.CommandKeywords = make([]string, 0)
 	conf.Context = ctx
 	conf.Cancel = cancel

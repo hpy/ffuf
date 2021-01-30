@@ -72,11 +72,11 @@ type InputOptions struct {
 }
 
 type OutputOptions struct {
-	DebugLog        string
-	OutputDirectory string
-	OutputFile      string
-	OutputFormat    string
-	OutputCreateEmptyFile	bool
+	DebugLog              string
+	OutputDirectory       string
+	OutputFile            string
+	OutputFormat          string
+	OutputCreateEmptyFile bool
 }
 
 type FilterOptions struct {
@@ -200,12 +200,14 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 				Value:   wl[0],
 				Keyword: wl[1],
 			})
+			conf.WordlistKeywords = append(conf.WordlistKeywords, wl[1])
 		} else {
 			conf.InputProviders = append(conf.InputProviders, InputProviderConfig{
 				Name:    "wordlist",
 				Value:   wl[0],
 				Keyword: "FUZZ",
 			})
+			conf.WordlistKeywords = append(conf.WordlistKeywords, "FUZZ")
 		}
 	}
 	for _, v := range parseOpts.Input.Inputcommands {
@@ -335,10 +337,17 @@ func ConfigFromOptions(parseOpts *ConfigOptions, ctx context.Context, cancel con
 
 	// Auto-calibration strings
 	if len(parseOpts.General.AutoCalibrationStrings) > 0 {
-		conf.AutoCalibrationStrings = parseOpts.General.AutoCalibrationStrings
+		for _, v := range parseOpts.General.AutoCalibrationStrings {
+			cs := strings.SplitN(v, ":", 2)
+			if len(cs) == 2 {
+				conf.AutoCalibrationStrings[cs[1]] = append(conf.AutoCalibrationStrings[cs[1]], &CalibrationString{Keyword: cs[1], Value: cs[0]})
+			} else {
+				conf.AutoCalibrationStrings[cs[1]] = append(conf.AutoCalibrationStrings[cs[1]], &CalibrationString{Keyword: "FUZZ", Value: cs[0]})
+			}
+		}
 	}
 	// Using -acc implies -ac
-	if len(parseOpts.General.AutoCalibrationStrings) > 0 {
+	if len(conf.AutoCalibrationStrings) > 0 {
 		conf.AutoCalibration = true
 	}
 

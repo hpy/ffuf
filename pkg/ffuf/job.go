@@ -339,24 +339,83 @@ func (j *Job) handleRecursionJob(resp Response) {
 	}
 }
 
+func getPermutation(calibrationStrings [][]*CalibrationString) [][]*CalibrationString {
+	toRet := [][]*CalibrationString{}
+
+	if len(calibrationStrings) == 0 {
+		return toRet
+	}
+
+	if len(calibrationStrings) == 1 {
+		for _, input := range calibrationStrings[0] {
+			toRet = append(toRet, []*CalibrationString{input})
+		}
+		return toRet
+	}
+
+	t := getPermutation(calibrationStrings[1:])
+	for _, input := range calibrationStrings[0] {
+		for _, perm := range t {
+			toRetAdd := append([]*CalibrationString{input}, perm...)
+			toRet = append(toRet, toRetAdd)
+		}
+	}
+
+	return toRet
+}
+
 //CalibrateResponses returns slice of Responses for randomly generated filter autocalibration requests
 func (j *Job) CalibrateResponses() ([]Response, error) {
-	cInputs := make([]string, 0)
+	var cInputs map[string][]*CalibrationString
 	rand.Seed(time.Now().UnixNano())
+
 	if len(j.Config.AutoCalibrationStrings) < 1 {
-		cInputs = append(cInputs, "admin"+RandomString(16)+"/")
-		cInputs = append(cInputs, ".htaccess"+RandomString(16))
-		cInputs = append(cInputs, RandomString(16)+"/")
-		cInputs = append(cInputs, RandomString(16))
+		// Test the default calibration strings against each wordlists keyword.
+		for _, keyword := range j.Config.WordlistKeywords {
+			var inputs = make([]*CalibrationString, 4)
+			inputs = append(inputs, &CalibrationString{Keyword: keyword, Value: "admin" + RandomString(16) + "/"})
+			inputs = append(inputs, &CalibrationString{Keyword: keyword, Value: ".htaccess" + RandomString(16)})
+			inputs = append(inputs, &CalibrationString{Keyword: keyword, Value: RandomString(16) + "/"})
+			inputs = append(inputs, &CalibrationString{Keyword: keyword, Value: RandomString(16)})
+
+			cInputs = map[string][]*CalibrationString{
+				keyword: inputs,
+			}
+		}
 	} else {
-		cInputs = append(cInputs, j.Config.AutoCalibrationStrings...)
+		// Use custom calibration strings
+		cInputs = make(map[string][]*CalibrationString, 0)
+		for k, v := range j.Config.AutoCalibrationStrings {
+			cInputs[k] = append(cInputs[k], v...)
+		}
+
+		// // If any words did NOT have a custom value set then replace them with an example from our users provided wordlists
+		// for _, keyword := range j.Config.WordlistKeywords {
+		// 	// ignore any that we set custom calibration strings for
+		// 	if _, ok := cInputs[keyword]; ok {
+		// 		continue
+		// 	}
+
+		// 	cInputs[keyword] = append(cInputs[keyword], &CalibrationString{Keyword: keyword, Value: "admin" + RandomString(16) + "/"})
+		// 	cInputs[keyword] = append(cInputs[keyword], &CalibrationString{Keyword: keyword, Value: ".htaccess" + RandomString(16)})
+		// 	cInputs[keyword] = append(cInputs[keyword], &CalibrationString{Keyword: keyword, Value: RandomString(16) + "/"})
+		// 	cInputs[keyword] = append(cInputs[keyword], &CalibrationString{Keyword: keyword, Value: RandomString(16)})
+		// }
+
 	}
 
 	results := make([]Response, 0)
-	for _, input := range cInputs {
-		inputs := make(map[string][]byte, len(j.Config.InputProviders))
-		for _, v := range j.Config.InputProviders {
-			inputs[v.Keyword] = []byte(input)
+	values := [][]*CalibrationString{}
+	for _, v := range cInputs {
+		values = append(values, v)
+	}
+
+	//Create all permutations of our test cases
+	for _, calibrationSet := range getPermutation(values) {
+
+		inputs := make(map[string][]byte, len(calibrationSet))
+		for _, v := range calibrationSet {
+			inputs[v.Keyword] = []byte(v.Value)
 		}
 
 		req, err := j.Runner.Prepare(inputs)
@@ -366,6 +425,7 @@ func (j *Job) CalibrateResponses() ([]Response, error) {
 			log.Printf("%s", err)
 			return results, err
 		}
+
 		resp, err := j.Runner.Execute(&req)
 		if err != nil {
 			return results, err
@@ -377,6 +437,7 @@ func (j *Job) CalibrateResponses() ([]Response, error) {
 		}
 	}
 	return results, nil
+
 }
 
 // CheckStop stops the job if stopping conditions are met
